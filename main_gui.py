@@ -1,88 +1,71 @@
 import tkinter as tk
-from tkinter import scrolledtext, ttk
-import asyncio
-from core.extractor import extract_information_async
-from tkinter import font
-
-def analyze_and_display():
-    name_address_text = name_address_input_area.get("1.0", tk.END).strip()
-    birth_date_text = birth_date_input_area.get().strip()
-    ssn_text = ssn_input_area.get().strip()
-
-    extracted_info = asyncio.run(extract_information_async(name_address_text, birth_date_text, ssn_text))
-
-    # 清空结果文本框
-    for widget in result_frame.winfo_children():
-        widget.destroy()
-
-    # 设置结果标题样式
-    result_title_font = font.Font(size=14, weight="bold")
-    tk.Label(result_frame, text="分析结果", font=result_title_font).grid(row=0, column=0, columnspan=2, sticky="w", pady=(5, 10))
-
-    # 设置字段标题样式
-    field_title_font = font.Font(weight="bold")
-
-    # 结果字段和值
-    fields = [
-        ("名字 (First Name):", extracted_info.get("名字 (First Name)", "N/A")),
-        ("姓氏 (Last Name):", extracted_info.get("姓氏 (Last Name)", "N/A")),
-        ("州 (State):", extracted_info.get("州 (State)", "N/A")),
-        ("城市 (City):", extracted_info.get("城市 (City)", "N/A")),
-        ("详细地址 (Street Address):", extracted_info.get("详细地址 (Street Address)", "N/A")),
-        ("出生日期:", extracted_info.get("出生日期", "N/A")),
-        ("年龄:", extracted_info.get("年龄", "N/A")),
-        ("SSN:", extracted_info.get("SSN", "N/A"))
-    ]
-
-    for i, (label_text, value_text) in enumerate(fields, start=1):
-        tk.Label(result_frame, text=label_text, font=field_title_font, anchor="w").grid(row=i, column=0, sticky="w", padx=10, pady=2)
-        tk.Label(result_frame, text=value_text, anchor="w", justify="left").grid(row=i, column=1, sticky="ew", padx=10, pady=2)
-
-    # 配置结果框架列的权重
-    result_frame.grid_columnconfigure(1, weight=1)
+from tkinter import scrolledtext, messagebox
+from core.extractor import extract_information
 
 def run_analysis():
-    analyze_and_display()
+    # 调试：确认回调触发
+    print("调试：分析按钮被点击")
 
-# 创建主窗口
+    # 1. 读取输入
+    name_address = ta_name_addr.get("1.0", tk.END).strip()
+    birth_date = ent_birth.get().strip()
+    ssn = ent_ssn.get().strip()
+
+    # 2. 输入验证
+    if not name_address:
+        messagebox.showwarning("输入缺失", "请在左侧“姓名地址邮编”框内输入内容。")
+        return
+    if not birth_date and not ssn:
+        messagebox.showwarning("输入建议", "建议提供出生日期或SSN以获得更完整的结果。")
+
+    # 3. 调用解析函数
+    try:
+        info = extract_information(name_address, birth_date, ssn)
+        print("调试：解析结果 =", info)  # 打印结果便于调试
+    except Exception as e:
+        messagebox.showerror("解析失败", f"发生异常：\n{e}")
+        return
+
+    # 4. 清空结果区
+    for w in result_frame.winfo_children():
+        w.destroy()
+
+    # 5. 显示解析结果（即使某些字段为空）
+    row = 0
+    if not any(info.values()):  # 如果所有字段都为空
+        messagebox.showinfo("无结果", "未解析到任何有效信息，请检查输入格式。\n"
+                                    "示例：\nJohn Doe\n123 Main St, Springfield, IL 62701")
+        return
+    for key, val in info.items():
+        if val is not None:  # 只显示非空字段
+            tk.Label(result_frame, text=f"{key}:", anchor="w", width=20).grid(row=row, column=0, sticky="w", padx=5, pady=2)
+            tk.Label(result_frame, text=str(val), anchor="w").grid(row=row, column=1, sticky="w", padx=5, pady=2)
+            row += 1
+
+# 主程序
 root = tk.Tk()
 root.title("信息提取小工具")
 
-# 左右布局使用 PanedWindow
-paned_window = ttk.Panedwindow(root, orient=tk.HORIZONTAL)
-paned_window.pack(fill=tk.BOTH, expand=True)
+# 左侧：输入区
+left = tk.Frame(root, padx=10, pady=10)
+left.pack(side="left", fill="both", expand=True)
 
-# 输入区域 Frame
-input_frame = tk.Frame(paned_window, padx=10, pady=10)
-paned_window.add(input_frame, weight=1)
+tk.Label(left, text="姓名地址邮编:").pack(anchor="w")
+ta_name_addr = scrolledtext.ScrolledText(left, width=40, height=6)
+ta_name_addr.pack(fill="x", pady=(0, 10))
 
-name_address_label = tk.Label(input_frame, text="姓名地址邮编:")
-name_address_label.pack(pady=(0, 5), anchor="w")
-name_address_input_area = scrolledtext.ScrolledText(input_frame, width=40, height=8)
-name_address_input_area.pack(pady=(0, 10), fill="x", expand=True)
+tk.Label(left, text="出生日期 (e.g. September 7, 2002):").pack(anchor="w")
+ent_birth = tk.Entry(left, width=40)
+ent_birth.pack(fill="x", pady=(0, 10))
 
-birth_date_label = tk.Label(input_frame, text="出生日期 (Month Day, Year):")
-birth_date_label.pack(pady=(5, 5), anchor="w")
-birth_date_input_area = tk.Entry(input_frame, width=40)
-birth_date_input_area.pack(pady=(0, 10), fill="x")
+tk.Label(left, text="SSN (XXX-XX-XXXX 或 9 位数字):").pack(anchor="w")
+ent_ssn = tk.Entry(left, width=40)
+ent_ssn.pack(fill="x", pady=(0, 10))
 
-ssn_label = tk.Label(input_frame, text="SSN (XXX-XX-XXXX 或 XXXXXXXXX):")
-ssn_label.pack(pady=(5, 5), anchor="w")
-ssn_input_area = tk.Entry(input_frame, width=40)
-ssn_input_area.pack(pady=(0, 10), fill="x")
+tk.Button(left, text="分析", command=run_analysis, width=15, height=1).pack(pady=10)
 
-analyze_button_font = font.Font(size=12, weight="bold")
-analyze_button = tk.Button(input_frame, text="分析", command=run_analysis, font=analyze_button_font, padx=20, pady=10)
-analyze_button.pack(pady=20)
+# 右侧：结果区
+result_frame = tk.Frame(root, padx=10, pady=10, relief="groove", bd=1)
+result_frame.pack(side="right", fill="both", expand=True)
 
-# 结果显示区域 Frame
-result_frame = tk.Frame(paned_window, padx=10, pady=10)
-paned_window.add(result_frame, weight=1)
-
-# 作者信息
-author_info_font = font.Font(size=8, slant="italic")
-author_label = tk.Label(root, text="AIGC创意人竹相左边  2025.4.29", font=author_info_font)
-author_label.pack(pady=5, anchor="se")
-
-# 运行主循环
 root.mainloop()
