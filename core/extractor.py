@@ -40,15 +40,22 @@ def extract_information(name_address: str = "", birth_date: str = "", ssn: str =
 
         if len(lines) >= 2:
             addr = " ".join(lines[1:])
-            # 地址：支持多种格式，如 "123 Main St, Springfield, IL 62701" 或 "123 Main St Springfield IL 62701"
+            # 地址：改进正则表达式，确保城市名正确提取
             m_addr = re.search(
-                r"(?P<street>\d+\s+[\w\s]+?)\s*,?\s*"
-                r"(?P<city>[\w\s]+?)\s*,?\s*(?P<state>[A-Z]{2})\s*(?P<zip>\d{5})?",
+                r"(?P<street>\d+\s+[A-Za-z\s]+?)\s*,?\s*"
+                r"(?P<city>[A-Za-z\s]+?)\s*,?\s*(?P<state>[A-Z]{2})\s*(?P<zip>\d{5})?$",
                 addr
             )
             if m_addr:
-                data["详细地址 (Street Address)"] = m_addr.group("street").strip()
-                data["城市 (City)"] = m_addr.group("city").strip()
+                street = m_addr.group("street").strip()
+                city = m_addr.group("city").strip()
+                # 确保城市名不包含街道名
+                street_words = street.split()
+                for word in street_words:
+                    if word.lower() in city.lower():
+                        city = city.replace(word, "").strip()
+                data["详细地址 (Street Address)"] = street
+                data["城市 (City)"] = city if city else None
                 st = m_addr.group("state").upper()
                 data["州 (State)"] = us_state_abbreviations.get(st, st)
             else:
@@ -58,7 +65,7 @@ def extract_information(name_address: str = "", birth_date: str = "", ssn: str =
     bd = birth_date.strip()
     if bd:
         # 支持 "September 7, 2002" 或 "2002-09-07"
-        m_bd = re.search(r"([A-Za получай_z]+\s+\d{1,2},\s*\d{4})|(\d{4}-\d{2}-\d{2})", bd)
+        m_bd = re.search(r"([A-Za-z]+\s+\d{1,2},\s*\d{4})|(\d{4}-\d{2}-\d{2})", bd)
         if m_bd:
             try:
                 if m_bd.group(1):  # 格式如 "September 7, 2002"
@@ -66,7 +73,10 @@ def extract_information(name_address: str = "", birth_date: str = "", ssn: str =
                 else:  # 格式如 "2002-09-07"
                     dt = datetime.strptime(m_bd.group(2), "%Y-%m-%d")
                 data["出生日期"] = dt.strftime("%Y-%m-%d")
-                data["年龄"] = relativedelta(datetime.now(), dt).years
+                # 基于当前日期 2025-04-29 计算年龄
+                current_date = datetime(2025, 4, 29)
+                age = relativedelta(current_date, dt).years
+                data["年龄"] = age
             except ValueError as e:
                 print(f"调试：出生日期解析失败，错误 = {e}, 输入 = {bd}")
         else:
@@ -75,7 +85,8 @@ def extract_information(name_address: str = "", birth_date: str = "", ssn: str =
             if m_year:
                 y = int(m_year.group(1))
                 data["出生日期"] = f"{y}-01-01"
-                data["年龄"] = datetime.now().year - y
+                current_date = datetime(2025, 4, 29)
+                data["年龄"] = current_date.year - y
             else:
                 print("调试：出生日期格式不匹配，输入 =", bd)
 

@@ -27,20 +27,30 @@ def run_analysis():
         return
 
     # 4. 清空结果区
-    for w in result_frame.winfo_children():
-        w.destroy()
+    for widget in result_frame.winfo_children():
+        widget.destroy()
 
-    # 5. 显示解析结果（即使某些字段为空）
-    row = 0
+    # 5. 显示解析结果
     if not any(info.values()):  # 如果所有字段都为空
         messagebox.showinfo("无结果", "未解析到任何有效信息，请检查输入格式。\n"
                                     "示例：\nJohn Doe\n123 Main St, Springfield, IL 62701")
         return
+
+    # 创建标题和内容的框架
+    row = 0
     for key, val in info.items():
         if val is not None:  # 只显示非空字段
-            tk.Label(result_frame, text=f"{key}:", anchor="w", width=20).grid(row=row, column=0, sticky="w", padx=5, pady=2)
-            tk.Label(result_frame, text=str(val), anchor="w").grid(row=row, column=1, sticky="w", padx=5, pady=2)
+            # 标题：使用 Label，加粗，不可选中
+            tk.Label(result_frame, text=f"{key}:", font=("Arial", 10, "bold"), anchor="w", width=25).grid(row=row, column=0, sticky="w", padx=5, pady=2)
+            # 内容：使用 Text，可复制
+            content_text = tk.Text(result_frame, height=1, width=30, wrap=tk.WORD, borderwidth=0, highlightthickness=0)
+            content_text.grid(row=row, column=1, sticky="w", padx=5, pady=2)
+            content_text.insert(tk.END, str(val))
+            content_text.configure(state="normal")  # 允许复制
             row += 1
+
+    # 添加作者信息
+    tk.Label(result_frame, text="作者：人机协作Grok&竹相左边，由xAI创建", font=("Arial", 8), anchor="e").grid(row=row, column=0, columnspan=2, sticky="se", pady=10)
 
 # 主程序
 root = tk.Tk()
