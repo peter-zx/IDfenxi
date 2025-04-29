@@ -2,26 +2,13 @@ import asyncio
 import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-
-# 州份缩写到全称的映射 (保持不变)
-state_abbreviations = {
-    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California",
-    "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "DC": "District of Columbia",
-    "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois",
-    "IN": "Indiana", "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana",
-    "ME": "Maine", "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan",
-    "MN": "Minnesota", "MS": "Mississippi", "MO": "Missouri", "MT": "Montana",
-    "NE": "Nebraska", "NV": "Nevada", "NH": "New Hampshire", "NJ": "New Jersey",
-    "NM": "New Mexico", "NY": "New York", "NC": "North Carolina", "ND": "North Dakota",
-    "OH": "Ohio", "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania",
-    "RI": "Rhode Island", "SC": "South Carolina", "SD": "South Dakota", "TN": "Tennessee",
-    "TX": "Texas", "UT": "Utah", "VT": "Vermont", "VA": "Virginia", "WA": "Washington",
-    "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming"
-}
+from mappings.us_states import us_state_abbreviations
+# 可以根据需要导入其他国家/地区的映射
+# from mappings.european_countries import european_country_codes
 
 async def extract_information_async(name_address: str = "", birth_date: str = "", ssn: str = "") -> dict:
     """
-    异步地解析姓名地址、出生日期和 SSN。
+    异步地解析姓名地址、出生日期和 SSN，引用外部映射文件。
     """
     await asyncio.sleep(0.01)
 
@@ -33,13 +20,14 @@ async def extract_information_async(name_address: str = "", birth_date: str = ""
         "详细地址 (Street Address)": None,
         "出生日期": None,
         "年龄": None,
-        "SSN": None
+        "SSN": None,
+        "国家": None # 如果需要提取国家
     }
 
-    # 解析姓名地址
+    # 解析姓名地址输入框的内容
     name_address_lines = [line.strip() for line in name_address.split('\n')]
     if name_address_lines:
-        # 尝试提取姓名 (假设第一行是姓名)
+        # 尝试从第一行提取姓名 (假设格式为 "FirstName LastName" 或 "FirstName MiddleInitial. LastName")
         name_match = re.search(r"^(?P<first>\w+)\s+(?P<middle>[A-Z]\.\s*)?(?P<last>\w+)", name_address_lines[0])
         if name_match:
             extracted_data["名字 (First Name)"] = name_match.group("first")
@@ -49,24 +37,48 @@ async def extract_information_async(name_address: str = "", birth_date: str = ""
             extracted_data["名字 (First Name)"] = parts[0]
             extracted_data["姓氏 (Last Name)"] = parts[1]
 
-        # 尝试提取地址 (假设剩余行包含地址信息)
+        # 尝试从后续行提取地址信息
         if len(name_address_lines) >= 2:
             address_part = " ".join(name_address_lines[1:])
+            # 尝试匹配 "Street, City, ST ZIP" 格式
             address_match = re.search(r"^(?P<street>[\d]+\s+[\w\s]+)\s*(?P<city>[\w\s]+),\s*(?P<state>[A-Z]{2})\s*(?P<zip>\d{5})", address_part)
             if address_match:
                 extracted_data["详细地址 (Street Address)"] = address_match.group("street").strip()
                 extracted_data["城市 (City)"] = address_match.group("city").strip()
-                extracted_data["州 (State)"] = state_abbreviations.get(address_match.group("state").upper(), address_match.group("state"))
+                # 使用美国州份缩写映射获取全称
+                extracted_data["州 (State)"] = us_state_abbreviations.get(address_match.group("state").upper(), address_match.group("state"))
+            else:
+                # 尝试匹配 "Street\nCity, ST ZIP" 格式
+                address_match_alt = re.search(r"^(?P<street>[\d]+\s+[\w\s]+)\n(?P<city>[\w\s]+),\s*(?P<state>[A-Z]{2})\s*(?P<zip>\d{5})", name_address, re.MULTILINE)
+                if address_match_alt:
+                    extracted_data["详细地址 (Street Address)"] = address_match_alt.group("street").strip()
+                    extracted_data["城市 (City)"] = address_match_alt.group("city").strip()
+                    # 使用美国州份缩写映射获取全称
+                    extracted_data["州 (State)"] = us_state_abbreviations.get(address_match_alt.group("state").upper(), address_match_alt.group("state"))
+                elif len(name_address_lines) >= 3: # 尝试解析多行地址
+                    street = name_address_lines[1].strip()
+                    city_state_zip = name_address_lines[2].strip().split(',')
+                    if len(city_state_zip) == 2:
+                        city = city_state_zip[0].strip()
+                        state_zip = city_state_zip[1].strip().split()
+                        if len(state_zip) >= 2 and state_zip[-1].isdigit():
+                            state_abbrev = state_zip[-2].strip()
+                            zip_code = state_zip[-1].strip()
+                            extracted_data["详细地址 (Street Address)"] = street
+                            extracted_data["城市 (City)"] = city
+                            # 使用美国州份缩写映射获取全称
+                            extracted_data["州 (State)"] = us_state_abbreviations.get(state_abbrev.upper(), state_abbrev)
+                            # 在这里可以尝试提取国家信息，如果地址中包含
 
-    # 解析出生日期和计算年龄
+    # 解析出生日期输入框的内容
     birth_date = birth_date.strip()
-    date_match = re.search(r"([A-Za-z]+\s*\d{1,2},\s*\d{4})", birth_date)
+    date_match = re.search(r"([A-Za-z]+\s*\d{1,2},\s*\d{4})", birth_date) # 匹配 "Month Day, Year" 格式
     if date_match:
         try:
             birth_date_obj = datetime.strptime(date_match.group(1), "%B %d, %Y")
-            extracted_data["出生日期"] = birth_date_obj.strftime("%Y-%m-%d")
+            extracted_data["出生日期"] = birth_date_obj.strftime("%Y-%m-%d") # 格式化为 YYYY-MM-DD
             today = datetime.now()
-            age = relativedelta(today, birth_date_obj).years
+            age = relativedelta(today, birth_date_obj).years # 计算年龄
             extracted_data["年龄"] = age
         except ValueError:
             pass
@@ -74,17 +86,17 @@ async def extract_information_async(name_address: str = "", birth_date: str = ""
         year_match = re.search(r"(\d{4})", birth_date)
         try:
             birth_year = int(year_match.group(1))
-            extracted_data["出生日期"] = f"{birth_year}-01-01" # 仅供参考
-            extracted_data["年龄"] = datetime.now().year - birth_year
+            extracted_data["出生日期"] = f"{birth_year}-01-01" # 仅供参考，只提取到年份
+            extracted_data["年龄"] = datetime.now().year - birth_year # 计算大致年龄
         except ValueError:
             pass
 
-    # 提取 SSN
+    # 解析 SSN 输入框的内容
     ssn = ssn.strip()
-    ssn_match = re.search(r"(\d{3}-\d{2}-\d{4})", ssn)
+    ssn_match = re.search(r"(\d{3}-\d{2}-\d{4})", ssn) # 匹配 "XXX-XX-XXXX" 格式
     if ssn_match:
         extracted_data["SSN"] = ssn_match.group(1)
-    elif re.search(r"(\d{9})", ssn):
+    elif re.search(r"(\d{9})", ssn): # 匹配 "XXXXXXXXX" 格式
         extracted_data["SSN"] = re.search(r"(\d{9})", ssn).group(1)
 
     return extracted_data
