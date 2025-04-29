@@ -5,7 +5,7 @@ async def extract_information_async(text: str) -> dict:
     """
     异步地从文本中提取姓名、地址、SSN 和出生日期。
     """
-    await asyncio.sleep(0.01)  # 模拟一个小的异步操作，表示这个函数可能是耗时的
+    await asyncio.sleep(0.01)  # 模拟一个小的异步操作
 
     extracted_data = {
         "姓名 (Name)": None,
