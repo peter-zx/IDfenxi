@@ -2,26 +2,25 @@ import tkinter as tk
 from tkinter import scrolledtext
 from tkinter import ttk
 import asyncio
-from tabulate import tabulate
 from core.extractor import extract_information_async
 
 def analyze_and_display():
     input_text = input_text_area.get("1.0", tk.END)
-    extracted_info = asyncio.run(extract_information_async(input_text))
+    manual_address_text = address_input_area.get("1.0", tk.END).strip()
+    extracted_info = asyncio.run(extract_information_async(input_text, manual_address_text))
 
     # 清空之前的表格内容
     for item in result_tree.get_children():
         result_tree.delete(item)
 
     # 将提取的信息插入表格
-    for key, value in extracted_info.items():
-        result_tree.insert("", tk.END, values=(extracted_info.get("名字 (First Name)"),
-                                               extracted_info.get("姓氏 (Last Name)"),
-                                               extracted_info.get("详细地址 (Street Address)"),
-                                               extracted_info.get("城市 (City)"),
-                                               extracted_info.get("州 (State)"),
-                                               extracted_info.get("SSN (社会安全号码)"),
-                                               extracted_info.get("出生日期 (Date of Birth)")))
+    result_tree.insert("", tk.END, values=(extracted_info.get("名字 (First Name)"),
+                                           extracted_info.get("姓氏 (Last Name)"),
+                                           extracted_info.get("详细地址 (Street Address)"),
+                                           extracted_info.get("城市 (City)"),
+                                           extracted_info.get("州 (State)"),
+                                           extracted_info.get("SSN (社会安全号码)"),
+                                           extracted_info.get("出生日期 (Date of Birth)")))
 
 def run_analysis():
     analyze_and_display()
@@ -30,11 +29,17 @@ def run_analysis():
 root = tk.Tk()
 root.title("异步信息提取小工具")
 
-# 创建输入框
+# 创建输入文本框
 input_label = tk.Label(root, text="输入文本:")
 input_label.pack(pady=5)
-input_text_area = scrolledtext.ScrolledText(root, width=50, height=20)
+input_text_area = scrolledtext.ScrolledText(root, width=50, height=10) # 缩小高度
 input_text_area.pack(padx=10, pady=5)
+
+# 创建地址输入框
+address_label = tk.Label(root, text="手动输入地址 (街道, 城市 ST Zip):")
+address_label.pack(pady=5)
+address_input_area = scrolledtext.ScrolledText(root, width=50, height=3) # 较小的高度
+address_input_area.pack(padx=10, pady=5)
 
 # 创建分析按钮
 analyze_button = tk.Button(root, text="分析", command=run_analysis)
@@ -55,15 +60,11 @@ result_tree.column("first_name", width=100)
 result_tree.column("last_name", width=100)
 result_tree.column("street_address", width=200)
 result_tree.column("city", width=100)
-result_tree.column("state", width=50)
+result_tree.column("state", width=100) # 增加宽度以显示完整州名
 result_tree.column("ssn", width=150)
 result_tree.column("birth_date", width=150)
 result_tree["displaycolumns"] = ("first_name", "last_name", "street_address", "city", "state", "ssn", "birth_date")
 result_tree.pack(padx=10, pady=5, expand=True, fill="both")
-
-# 创建状态标签
-status_label = tk.Label(root, text="")
-status_label.pack(pady=5)
 
 # 运行主循环
 root.mainloop()
