@@ -2,9 +2,11 @@ import tkinter as tk
 from tkinter import scrolledtext, messagebox
 import asyncio
 import webbrowser
+from PIL import Image, ImageTk
 
 from core.extractor import extract_information
 from ui.links_config import STEPS, REMARK
+from ui.sponsor_config import SPONSOR_CONTENT
 
 class AppGUI:
     def __init__(self, root, loop):
@@ -121,9 +123,25 @@ class AppGUI:
     def show_sponsor_window(self):
         sponsor_window = tk.Toplevel(self.root)
         sponsor_window.title("赞助支持")
-        sponsor_window.geometry("300x200")
+        sponsor_window.geometry("400x500")
         sponsor_window.configure(bg="#F5F5F5")
-        
-        tk.Label(sponsor_window, text="感谢您的支持！", font=("DengXian", 12, "bold"), fg="black", bg="#F5F5F5").pack(pady=10)
-        tk.Label(sponsor_window, text="未来添加收款码\n或赞助方式", font=("DengXian", 10), fg="#666666", bg="#F5F5F5", justify="center").pack(pady=10)
-        tk.Button(sponsor_window, text="关闭", command=sponsor_window.destroy, font=("DengXian", 10), bg="#0078D4", fg="white", activebackground="#005A9E", relief="flat").pack(pady=10)
+
+        content_frame = tk.Frame(sponsor_window, bg="#F5F5F5")
+        content_frame.pack(pady=20, padx=20, fill="both", expand=True)
+
+        tk.Label(content_frame, text=SPONSOR_CONTENT["title"], font=("DengXian", 16, "bold"), fg="#333333", bg="#F5F5F5").pack(pady=(0, 20))
+
+        if SPONSOR_CONTENT["image_path"]:
+            try:
+                image = Image.open(SPONSOR_CONTENT["image_path"])
+                image = image.resize((200, 200), Image.Resampling.LANCZOS)
+                photo = ImageTk.PhotoImage(image)
+                image_label = tk.Label(content_frame, image=photo, bg="#F5F5F5")
+                image_label.image = photo
+                image_label.pack(pady=(0, 20))
+            except Exception as e:
+                tk.Label(content_frame, text="无法加载图片", font=("DengXian", 10), fg="#666666", bg="#F5F5F5").pack(pady=(0, 20))
+
+        tk.Label(content_frame, text=SPONSOR_CONTENT["description"], font=("DengXian", 12), fg="#666666", bg="#F5F5F5", wraplength=350, justify="center").pack(pady=(0, 20))
+
+        tk.Button(content_frame, text="关闭", command=sponsor_window.destroy, font=("DengXian", 12), bg="#0078D4", fg="white", activebackground="#005A9E", relief="flat", width=12).pack(pady=10)

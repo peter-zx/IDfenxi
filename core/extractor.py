@@ -1,25 +1,12 @@
 import re
-import asyncio
 from datetime import datetime
+from dateutil import parser
 from dateutil.relativedelta import relativedelta
-from mappings.us_states import us_state_abbreviations
 
-async def extract_information(name_address: str = "", birth_date: str = "", ssn: str = "") -> dict:
-    """
-    异步解析姓名/地址、出生日期和 SSN。
-    返回的字典包含以下键：
-      - 名字
-      - 姓氏
-      - 州
-      - 城市
-      - 详细地址
-      - 邮编
-      - 出生日期
-      - 英文出生日期
-      - 年龄
-      - SSN
-    """
-    data = {
+from mappings.us_states import US_STATES
+
+async def extract_information(name_address, birth_date, ssn):
+    info = {
         "名字": None,
         "姓氏": None,
         "州": None,
@@ -29,86 +16,77 @@ async def extract_information(name_address: str = "", birth_date: str = "", ssn:
         "出生日期": None,
         "英文出生日期": None,
         "年龄": None,
-        "SSN": None
+        "SSN": None,
     }
 
-    # 解析姓名与地址
-    lines = [L.strip() for L in name_address.splitlines() if L.strip()]
-    if lines:
-        # 提取姓名
-        name_line = lines[0]
-        name_parts = name_line.split()
-        if len(name_parts) >= 2:
-            data["名字"] = name_parts[0]
-            data["姓氏"] = name_parts[-1]
-        elif len(name_parts) == 1:
-            data["名字"] = name_parts[0]
-
-        # 提取地址
-        address_line = " ".join(lines[1:]) if len(lines) > 1 else ""
-        if address_line:
-            # 改进正则表达式，确保街道名和城市名正确分隔
-            m_addr = re.search(
-                r"(?P<street>\d+\s+[A-Za-z\s]+?)(?:,?\s*)(?P<city>[A-Za-z\s]+?),\s*(?P<state>[A-Z]{2})\s*(?P<zip>\d{5})?$",
-                address_line
-            )
-            if m_addr:
-                street = m_addr.group("street").strip()
-                city = m_addr.group("city").strip()
-                state = m_addr.group("state").upper()
-                zip_code = m_addr.group("zip")
-
-                # 后处理：清理城市名，确保不包含街道名
-                street_words = street.split()[1:]  # 跳过数字部分（如“1252”）
-                for word in street_words:
-                    if word.lower() in city.lower():
-                        city = city.replace(word, "").replace("  ", " ").strip()
-
-                data["详细地址"] = street
-                data["城市"] = city
-                data["州"] = us_state_abbreviations.get(state, state)
-                data["邮编"] = zip_code
+    # 1. 解析姓名和地址
+    if name_address:
+        lines = name_address.strip().split('\n')
+        if lines:
+            # 提取姓名
+            name = lines[0].strip()
+            name_parts = name.split()
+            if len(name_parts) >= 2:
+                info["名字"] = name_parts[0]
+                info["姓氏"] = name_parts[-1]
             else:
-                print("调试：地址解析失败，输入 =", address_line)
+                info["名字"] = name
 
-    # 解析出生日期 & 计算年龄
-    bd = birth_date.strip()
-    if bd:
-        # 支持 "September 7, 2002" 或 "2002-09-07"
-        m_bd = re.search(r"([A-Za-z]+\s+\d{1,2},\s*\d{4})|(\d{4}-\d{2}-\d{2})", bd)
-        if m_bd:
-            try:
-                if m_bd.group(1):  # 格式如 "September 7, 2002"
-                    dt = datetime.strptime(m_bd.group(1), "%B %d, %Y")
-                else:  # 格式如 "2002-09-07"
-                    dt = datetime.strptime(m_bd.group(2), "%Y-%m-%d")
-                data["出生日期"] = dt.strftime("%Y-%m-%d")
-                data["英文出生日期"] = dt.strftime("%B %d, %Y")
-                current_date = datetime(2025, 4, 29)
-                age = relativedelta(current_date, dt).years
-                data["年龄"] = age
-            except ValueError as e:
-                print(f"调试：出生日期解析失败，错误 = {e}, 输入 = {bd}")
+            # 提取地址相关信息
+            if len(lines) > 1:
+                address_line = lines[1].strip()
+                info["详细地址"] = address_line
+
+                # 提取城市、州和邮编
+                if len(lines) > 2:
+                    city_state_zip = lines[2].strip()
+                else:
+                    city_state_zip = address_line
+
+                # 匹配城市、州和邮编
+                city_state_zip_match = re.match(r'^(.*?),\s*([A-Za-z\s]+)\s*(\d{5})$', city_state_zip)
+                if city_state_zip_match:
+                    info["城市"] = city_state_zip_match.group(1).strip()
+                    state_input = city_state_zip_match.group(2).strip()
+                    info["邮编"] = city_state_zip_match.group(3)
+
+                    # 查找州的全称
+                    for state_abbr, state_full in US_STATES.items():
+                        if state_input.lower() in (state_abbr.lower(), state_full.lower()):
+                            info["州"] = state_full
+                            break
+                else:
+                    # 如果没有邮编，尝试单独匹配城市和州
+                    city_state_match = re.match(r'^(.*?),\s*([A-Za-z\s]+)$', city_state_zip)
+                    if city_state_match:
+                        info["城市"] = city_state_match.group(1).strip()
+                        state_input = city_state_match.group(2).strip()
+                        for state_abbr, state_full in US_STATES.items():
+                            if state_input.lower() in (state_abbr.lower(), state_full.lower()):
+                                info["州"] = state_full
+                                break
+
+    # 2. 解析出生日期
+    if birth_date:
+        try:
+            parsed_date = parser.parse(birth_date, fuzzy=True)
+            info["出生日期"] = parsed_date.strftime("%Y-%m-%d")
+            info["英文出生日期"] = parsed_date.strftime("%B %d, %Y")
+
+            # 计算年龄
+            today = datetime.today()
+            age = relativedelta(today, parsed_date).years
+            info["年龄"] = age
+        except ValueError:
+            pass
+
+    # 3. 解析 SSN（去掉连字符，只保留数字）
+    if ssn:
+        ssn_cleaned = ssn.strip()
+        ssn_match = re.match(r'^\d{3}-\d{2}-\d{4}$', ssn_cleaned)
+        if ssn_match:
+            info["SSN"] = ssn_cleaned.replace("-", "")  # 去掉连字符
         else:
-            # 支持仅年份，如 "2002"
-            m_year = re.search(r"(\d{4})", bd)
-            if m_year:
-                y = int(m_year.group(1))
-                data["出生日期"] = f"{y}-01-01"
-                data["英文出生日期"] = f"January 01, {y}"
-                current_date = datetime(2025, 4, 29)
-                data["年龄"] = current_date.year - y
-            else:
-                print("调试：出生日期格式不匹配，输入 =", bd)
+            info["SSN"] = ssn_cleaned  # 如果格式不匹配，直接使用输入
 
-    # 提取 SSN
-    s = ssn.strip()
-    if s:
-        # 支持 "XXX-XX-XXXX" 或 "XXXXXXXXX"
-        m_ssn = re.search(r"(\d{3}-\d{2}-\d{4}|\d{9})", s)
-        if m_ssn:
-            data["SSN"] = m_ssn.group(0)
-        else:
-            print("调试：SSN 格式不匹配，输入 =", s)
-
-    return data
+    return info
