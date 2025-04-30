@@ -4,6 +4,7 @@ STEPS = [
     {"name": "角色信息", "url": "https://www.fakenamegenerator.com/advanced.php"},
     {"name": "SSN", "url": "https://www.fakexy.com"},
     {"name": "sms接码", "url": "https://temp-number.com"},
+    {"name": "学校注册官网", "url": "https://webapp4.asu.edu/uga_admissionsapp/?partner=SCAP?_ga=2.194414253.1668800463.1745983244-1199703711.1745038077"},  # 新增步骤
 ]
 
 # 备注信息
