@@ -1,27 +1,31 @@
 ```
 
 D:\竹相左边20250219\ai_work\news0429
-├── core\
-│   ├── __pycache__\
+├── core/
 │   └── extractor.py
-├── mappings\
-│   ├── __pycache__\
+├── mappings/
 │   ├── european_countries.py
 │   └── us_states.py
-├── ui\
-│   ├── __pycache__\
+├── ui/
 │   ├── gui.py
 │   ├── links_config.py
 │   └── sponsor_config.py
-├── util\
+├── util/
 │   └── helpers.py
-├── venv\
-├── images\        # 新建的照片存储文件夹
-│   └── qr_code.png  # 示例照片文件（你需要放入实际照片）
+├── static/
+│   └── images/
+│       └── qr_code.jpg
+├── templates/
+│   ├── index.html
+│   ├── result.html
+│   └── sponsor.html
+├── .dockerignore
 ├── .gitignore
+├── app.py
 ├── input_data.txt
 ├── LICENSE
 ├── main_gui.py
 ├── README.md
-└── requirements.txt
+├── requirements.txt
+└── Dockerfile
 ```

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>赞助支持</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #F5F5F5; margin: 0; padding: 20px; text-align: center; }
+        .container { max-width: 400px; margin: 0 auto; background-color: #FFFFFF; padding: 20px; border-radius: 5px; }
+        h2 { color: #333333; }
+        p { color: #666666; white-space: pre-line; }
+        img { max-width: 200px; height: auto; margin: 20px 0; }
+        a { display: inline-block; background-color: #0078D4; color: white; padding: 10px 20px; text-decoration: none; }
+        a:hover { background-color: #005A9E; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>{{ sponsor_content.title }}</h2>
+        {% if sponsor_content.image_path %}
+            <img src="{{ url_for('static', filename=sponsor_content.image_path) }}" alt="Sponsor QR Code">
+        {% else %}
+            <p>无法加载图片</p>
+        {% endif %}
+        <p>{{ sponsor_content.description }}</p>
+        <a href="{{ url_for('index') }}">返回</a>
+    </div>
+</body>
+</html>

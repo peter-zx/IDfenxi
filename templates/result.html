@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分析结果</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #F5F5F5; margin: 0; padding: 20px; }
+        .container { display: flex; gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .sidebar { width: 300px; background-color: #FFFFFF; padding: 20px; border-radius: 5px; }
+        .main { flex: 1; background-color: #FFFFFF; padding: 20px; border-radius: 5px; }
+        .result { width: 300px; background-color: #FFFFFF; padding: 20px; border-radius: 5px; }
+        .header { background-color: #F5F5F5; padding: 10px; margin-bottom: 20px; }
+        .header a { margin-left: 20px; color: #FF9500; text-decoration: none; }
+        .steps h3 { color: #3D3D3D; }
+        .steps a { margin-left: 10px; color: #0078D4; text-decoration: none; }
+        .remark { font-style: italic; color: #666666; }
+        .result p { margin: 5px 0; }
+        .result p strong { display: inline-block; width: 120px; }
+        .result p span { background-color: #E0E0E0; padding: 2px 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>EDU 邮箱注册信息生成器</h1>
+        <span>人机协作 Grok&竹相左边</span>
+        <a href="{{ url_for('sponsor') }}">赞助</a>
+    </div>
+    <div class="container">
+        <div class="sidebar">
+            <div class="steps">
+                <h3>EDU信息生成的步骤</h3>
+                {% for i, step in enumerate(steps, 1) %}
+                    <p>{{ i }}. {{ step.name }} <a href="{{ step.url }}" target="_blank">[打开]</a></p>
+                {% endfor %}
+            </div>
+            <p class="remark">{{ remark }}</p>
+        </div>
+        <div class="main">
+            <h2>分析结果</h2>
+            <div class="result">
+                {% for key, val in info.items() %}
+                    {% if val %}
+                        <p><strong>{{ key }}:</strong> <span>{{ val }}</span></p>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <a href="{{ url_for('index') }}">返回</a>
+        </div>
+    </div>
+</body>
+</html>

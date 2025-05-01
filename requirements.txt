@@ -3,3 +3,4 @@ tabulate
 python-dateutil
 spacy
 Pillow
+Flask

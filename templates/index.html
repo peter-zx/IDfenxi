@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDU 邮箱注册信息生成器</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #F5F5F5; margin: 0; padding: 20px; }
+        .container { display: flex; gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .sidebar { width: 300px; background-color: #FFFFFF; padding: 20px; border-radius: 5px; }
+        .main { flex: 1; background-color: #FFFFFF; padding: 20px; border-radius: 5px; }
+        .header { background-color: #F5F5F5; padding: 10px; margin-bottom: 20px; }
+        .header a { margin-left: 20px; color: #FF9500; text-decoration: none; }
+        .steps h3 { color: #3D3D3D; }
+        .steps a { margin-left: 10px; color: #0078D4; text-decoration: none; }
+        .remark { font-style: italic; color: #666666; }
+        textarea { width: 100%; height: 100px; margin-bottom: 10px; background-color: #F9F9F9; border: 1px solid #ccc; }
+        input[type="text"] { width: 100%; margin-bottom: 10px; background-color: #F9F9F9; border: 1px solid #ccc; }
+        button { background-color: #0078D4; color: white; padding: 10px 20px; border: none; cursor: pointer; }
+        button:hover { background-color: #005A9E; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>EDU 邮箱注册信息生成器</h1>
+        <span>人机协作 Grok&竹相左边</span>
+        <a href="{{ url_for('sponsor') }}">赞助</a>
+    </div>
+    <div class="container">
+        <div class="sidebar">
+            <div class="steps">
+                <h3>EDU信息生成的步骤</h3>
+                {% for i, step in enumerate(steps, 1) %}
+                    <p>{{ i }}. {{ step.name }} <a href="{{ step.url }}" target="_blank">[打开]</a></p>
+                {% endfor %}
+            </div>
+            <p class="remark">{{ remark }}</p>
+        </div>
+        <div class="main">
+            <form method="POST" action="{{ url_for('analyze') }}">
+                <label>姓名地址邮码:</label><br>
+                <textarea name="name_address"></textarea><br>
+                <label>出生日期:</label><br>
+                <input type="text" name="birth_date"><br>
+                <label>SSN:</label><br>
+                <input type="text" name="ssn"><br>
+                <button type="submit">分析</button>
+            </form>
+            {% if error %}
+                <p class="error">{{ error }}</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
