@@ -140,7 +140,7 @@ class AppGUI:
                 image_label.image = photo
                 image_label.pack(pady=(0, 20))
             except Exception as e:
-                tk.Label(content_frame, text="无法加载图片", font=("DengXian", 10), fg="#666666", bg="#F5F5F5").pack(pady=(0, 20))
+                tk.Label(content_frame, text=f"无法加载图片: {str(e)}", font=("DengXian", 10), fg="#666666", bg="#F5F5F5").pack(pady=(0, 20))
 
         tk.Label(content_frame, text=SPONSOR_CONTENT["description"], font=("DengXian", 12), fg="#666666", bg="#F5F5F5", wraplength=350, justify="center").pack(pady=(0, 20))
 
