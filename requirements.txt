@@ -2,3 +2,4 @@ asyncio
 tabulate
 python-dateutil
 spacy
+Pillow
