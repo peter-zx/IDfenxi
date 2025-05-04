@@ -18,7 +18,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // 模拟 links_config.py 的 STEPS, REMARK, ANNOUNCEMENT
+        // 模拟 links_config.py 的 STEPS 和 ANNOUNCEMENT
         const STEPS = [
             { name: "角色信息", url: "https://www.fakenamegenerator.com/advanced.php" },
             { name: "SSN", url: "https://www.fakexy.com" },
@@ -26,39 +26,14 @@
             { name: "学校注册官网", url: "https://webapp4.asu.edu/uga_admissionsapp/?partner=SCAP?_ga=2.194414253.1668800463.1745983244-1199703711.1745038077" },
             { name: "全球网络", url: "https://biaojie.shop/register?aff=p4y9gwMA" },
         ];
-        const REMARK = "备注：注意网络环境设置为规则国际网络";
         const ANNOUNCEMENT = "公告：请确保使用稳定的国际网络环境，推荐使用全球网络服务。";
 
         // 模拟 sponsor_config.py 的 SPONSOR_CONTENT
         const SPONSOR_CONTENT = {
             title: "赞助支持",
-            image_path: "", // 假设无图片，实际可替换为 URL
+            image_path: "/static/images/qr_code.jpg", // 更新为静态文件路径
             description: "感谢您的支持！您的赞助将帮助我们持续改进和维护此工具。",
         };
-
-        // 模拟 extract_information 函数
-        async function extractInformation(nameAddress, birthDate, ssn) {
-            // 模拟解析逻辑，返回示例结果
-            const lines = nameAddress.split('\n').filter(line => line.trim());
-            const results = [];
-            for (let i = 0; i < lines.length; i += 3) {
-                if (lines[i]) {
-                    results.push({
-                        名字: lines[i].split(' ')[0] || 'Unknown',
-                        姓氏: lines[i].split(' ')[1] || '',
-                        详细地址: lines[i + 1] || '',
-                        城市: lines[i + 2]?.split(',')[0] || '',
-                        州: lines[i + 2]?.split(',')[1]?.trim().split(' ')[0] || '',
-                        邮编: lines[i + 2]?.split(',')[1]?.trim().split(' ')[1] || '',
-                        出生日期: birthDate || '',
-                        英文出生日期: birthDate ? new Date(birthDate).toLocaleDateString('en-US') : '',
-                        年龄: birthDate ? String(new Date().getFullYear() - new Date(birthDate).getFullYear()) : '',
-                        SSN: ssn || '',
-                    });
-                }
-            }
-            return results;
-        }
 
         // 主组件
         function App() {
@@ -70,11 +45,12 @@
             const [isAnalyzing, setIsAnalyzing] = useState(false);
             const [showSponsor, setShowSponsor] = useState(false);
 
-            // 模拟历史记录加载
+            // 加载历史记录
             useEffect(() => {
-                // 假设从 localStorage 加载历史记录
-                const savedHistory = JSON.parse(localStorage.getItem('history') || '[]');
-                setHistory(savedHistory.slice(0, 6));
+                fetch('/api/history')
+                    .then(res => res.json())
+                    .then(data => setHistory(data.slice(0, 6)))
+                    .catch(err => console.error('加载历史记录失败:', err));
             }, []);
 
             // 分析函数
@@ -88,17 +64,17 @@
                 }
                 setIsAnalyzing(true);
                 try {
-                    const data = await extractInformation(nameAddress, birthDate, ssn);
+                    const res = await fetch('/api/analyze', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name_address: nameAddress, birth_date: birthDate, ssn }),
+                    });
+                    if (!res.ok) throw new Error('分析失败');
+                    const data = await res.json();
                     setResults(data);
                     if (data.length) {
-                        const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
-                        const newHistory = [{
-                            record: data[0],
-                            timestamp: timestamp,
-                            name: `${data[0].名字} ${data[0].姓氏}`.trim(),
-                        }, ...history].slice(0, 6);
-                        setHistory(newHistory);
-                        localStorage.setItem('history', JSON.stringify(newHistory));
+                        const newHistory = await fetch('/api/history').then(res => res.json());
+                        setHistory(newHistory.slice(0, 6));
                     }
                 } catch (e) {
                     alert(`解析失败：${e.message}`);
@@ -290,7 +266,7 @@
                                 {SPONSOR_CONTENT.image_path ? (
                                     <img
                                         src={SPONSOR_CONTENT.image_path}
-                                        alt="Sponsor"
+                                        alt="Sponsor QR Code"
                                         className="w-48 h-48 mx-auto mb-4"
                                     />
                                 ) : (

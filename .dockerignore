@@ -1,17 +1,11 @@
-忽略虚拟环境
-
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
 venv/
-
-忽略编译文件
-
-pycache/ *.pyc
-
-忽略 Git 文件
-
-.git .gitignore
-
-忽略本地测试文件
-
-input_data.txt
-
+*.egg-info/
+*.egg
+.git/
+.gitignore
 records/
