@@ -4,53 +4,314 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EDU 邮箱注册信息生成器</title>
+    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.22.9/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #F5F5F5; margin: 0; padding: 20px; }
-        .container { display: flex; gap: 20px; max-width: 1200px; margin: 0 auto; }
-        .sidebar { width: 300px; background-color: #FFFFFF; padding: 20px; border-radius: 5px; }
-        .main { flex: 1; background-color: #FFFFFF; padding: 20px; border-radius: 5px; }
-        .header { background-color: #F5F5F5; padding: 10px; margin-bottom: 20px; }
-        .header a { margin-left: 20px; color: #FF9500; text-decoration: none; }
-        .steps h3 { color: #3D3D3D; }
-        .steps a { margin-left: 10px; color: #0078D4; text-decoration: none; }
-        .remark { font-style: italic; color: #666666; }
-        textarea { width: 100%; height: 100px; margin-bottom: 10px; background-color: #F9F9F9; border: 1px solid #ccc; }
-        input[type="text"] { width: 100%; margin-bottom: 10px; background-color: #F9F9F9; border: 1px solid #ccc; }
-        button { background-color: #0078D4; color: white; padding: 10px 20px; border: none; cursor: pointer; }
-        button:hover { background-color: #005A9E; }
-        .error { color: red; }
+        body { font-family: 'DengXian', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        textarea { resize: none; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <h1>EDU 邮箱注册信息生成器</h1>
-        <span>人机协作 Grok&竹相左边</span>
-        <a href="{{ url_for('sponsor') }}">赞助</a>
-    </div>
-    <div class="container">
-        <div class="sidebar">
-            <div class="steps">
-                <h3>EDU信息生成的步骤</h3>
-                {% for i, step in enumerate(steps, 1) %}
-                    <p>{{ i }}. {{ step.name }} <a href="{{ step.url }}" target="_blank">[打开]</a></p>
-                {% endfor %}
-            </div>
-            <p class="remark">{{ remark }}</p>
-        </div>
-        <div class="main">
-            <form method="POST" action="{{ url_for('analyze') }}">
-                <label>姓名地址邮码:</label><br>
-                <textarea name="name_address"></textarea><br>
-                <label>出生日期:</label><br>
-                <input type="text" name="birth_date"><br>
-                <label>SSN:</label><br>
-                <input type="text" name="ssn"><br>
-                <button type="submit">分析</button>
-            </form>
-            {% if error %}
-                <p class="error">{{ error }}</p>
-            {% endif %}
-        </div>
-    </div>
+<body class="bg-gray-100">
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 模拟 links_config.py 的 STEPS, REMARK, ANNOUNCEMENT
+        const STEPS = [
+            { name: "角色信息", url: "https://www.fakenamegenerator.com/advanced.php" },
+            { name: "SSN", url: "https://www.fakexy.com" },
+            { name: "sms接码", url: "https://temp-number.com" },
+            { name: "学校注册官网", url: "https://webapp4.asu.edu/uga_admissionsapp/?partner=SCAP?_ga=2.194414253.1668800463.1745983244-1199703711.1745038077" },
+            { name: "全球网络", url: "https://biaojie.shop/register?aff=p4y9gwMA" },
+        ];
+        const REMARK = "备注：注意网络环境设置为规则国际网络";
+        const ANNOUNCEMENT = "公告：请确保使用稳定的国际网络环境，推荐使用全球网络服务。";
+
+        // 模拟 sponsor_config.py 的 SPONSOR_CONTENT
+        const SPONSOR_CONTENT = {
+            title: "赞助支持",
+            image_path: "", // 假设无图片，实际可替换为 URL
+            description: "感谢您的支持！您的赞助将帮助我们持续改进和维护此工具。",
+        };
+
+        // 模拟 extract_information 函数
+        async function extractInformation(nameAddress, birthDate, ssn) {
+            // 模拟解析逻辑，返回示例结果
+            const lines = nameAddress.split('\n').filter(line => line.trim());
+            const results = [];
+            for (let i = 0; i < lines.length; i += 3) {
+                if (lines[i]) {
+                    results.push({
+                        名字: lines[i].split(' ')[0] || 'Unknown',
+                        姓氏: lines[i].split(' ')[1] || '',
+                        详细地址: lines[i + 1] || '',
+                        城市: lines[i + 2]?.split(',')[0] || '',
+                        州: lines[i + 2]?.split(',')[1]?.trim().split(' ')[0] || '',
+                        邮编: lines[i + 2]?.split(',')[1]?.trim().split(' ')[1] || '',
+                        出生日期: birthDate || '',
+                        英文出生日期: birthDate ? new Date(birthDate).toLocaleDateString('en-US') : '',
+                        年龄: birthDate ? String(new Date().getFullYear() - new Date(birthDate).getFullYear()) : '',
+                        SSN: ssn || '',
+                    });
+                }
+            }
+            return results;
+        }
+
+        // 主组件
+        function App() {
+            const [nameAddress, setNameAddress] = useState('');
+            const [birthDate, setBirthDate] = useState('');
+            const [ssn, setSsn] = useState('');
+            const [results, setResults] = useState([]);
+            const [history, setHistory] = useState([]);
+            const [isAnalyzing, setIsAnalyzing] = useState(false);
+            const [showSponsor, setShowSponsor] = useState(false);
+
+            // 模拟历史记录加载
+            useEffect(() => {
+                // 假设从 localStorage 加载历史记录
+                const savedHistory = JSON.parse(localStorage.getItem('history') || '[]');
+                setHistory(savedHistory.slice(0, 6));
+            }, []);
+
+            // 分析函数
+            const runAnalysis = async () => {
+                if (!nameAddress.trim()) {
+                    alert('请在“姓名地址邮码”框内输入内容。');
+                    return;
+                }
+                if (!birthDate.trim() && !ssn.trim()) {
+                    alert('建议提供出生日期或SSN以获得更完整的结果。');
+                }
+                setIsAnalyzing(true);
+                try {
+                    const data = await extractInformation(nameAddress, birthDate, ssn);
+                    setResults(data);
+                    if (data.length) {
+                        const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
+                        const newHistory = [{
+                            record: data[0],
+                            timestamp: timestamp,
+                            name: `${data[0].名字} ${data[0].姓氏}`.trim(),
+                        }, ...history].slice(0, 6);
+                        setHistory(newHistory);
+                        localStorage.setItem('history', JSON.stringify(newHistory));
+                    }
+                } catch (e) {
+                    alert(`解析失败：${e.message}`);
+                } finally {
+                    setIsAnalyzing(false);
+                }
+            };
+
+            // 复制结果
+            const copyResults = () => {
+                if (!results.length) {
+                    alert('当前没有可复制的解析结果。');
+                    return;
+                }
+                const text = results.map((info, idx) => {
+                    return `记录 ${idx + 1}:\n${Object.entries(info).filter(([_, val]) => val).map(([key, val]) => `${key}: ${val}`).join('\n')}`;
+                }).join('\n\n');
+                navigator.clipboard.writeText(text).then(() => alert('结果已复制到剪贴板！'));
+            };
+
+            // 导出结果
+            const exportResults = () => {
+                if (!results.length) {
+                    alert('当前没有可导出的解析结果。');
+                    return;
+                }
+                const csv = [
+                    '"名字","姓氏","州","城市","详细地址","邮编","出生日期","英文出生日期","年龄","SSN"',
+                    ...results.map(info => Object.values(info).map(val => `"${val || ''}"`).join(','))
+                ].join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'results.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+                alert('结果已导出！');
+            };
+
+            // 显示历史记录
+            const displayHistoryRecord = (record) => {
+                setResults([record]);
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-100">
+                    {/* 顶部栏 */}
+                    <div className="bg-gray-100 p-4 flex flex-col sm:flex-row items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                            <h1 className="text-xl sm:text-2xl font-bold text-black">EDU 邮箱注册信息生成器</h1>
+                            <span className="text-sm text-gray-600">人机协作 Grok&竹相左边</span>
+                        </div>
+                        <button
+                            onClick={() => setShowSponsor(true)}
+                            className="mt-2 sm:mt-0 px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
+                        >
+                            赞助
+                        </button>
+                    </div>
+
+                    {/* 主内容 */}
+                    <div className="flex flex-col lg:flex-row p-4 space-y-4 lg:space-y-0 lg:space-x-4">
+                        {/* 左侧栏 */}
+                        <div className="bg-white p-4 rounded shadow w-full lg:w-[400px] flex flex-col">
+                            <div className="flex-1 h-[70%]">
+                                <h2 className="text-lg font-bold text-gray-800 mb-4">EDU信息生成的步骤</h2>
+                                {STEPS.slice(0, -1).map((step, index) => (
+                                    <div key={step.name} className="flex items-center space-x-2 mb-2">
+                                        <span className="text-base text-black w-48">{`${index + 1}. ${step.name}`}</span>
+                                        <a
+                                            href={step.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                        >
+                                            打开
+                                        </a>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="mt-2 h-[30%] flex flex-col items-center">
+                                <p className="text-sm italic text-gray-600 text-center max-w-[300px]">{ANNOUNCEMENT}</p>
+                                <a
+                                    href={STEPS[STEPS.length - 1].url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-2 px-4 py-2 bg-gray-200 text-gray-600 rounded hover:bg-gray-300 w-32 text-center"
+                                >
+                                    {STEPS[STEPS.length - 1].name}
+                                </a>
+                            </div>
+                        </div>
+
+                        {/* 中间栏 */}
+                        <div className="bg-white p-4 rounded shadow w-full lg:flex-1">
+                            <label className="block text-sm font-bold text-black mb-2">
+                                姓名地址邮码（每组用空行分隔）:
+                            </label>
+                            <textarea
+                                value={nameAddress}
+                                onChange={(e) => setNameAddress(e.target.value)}
+                                className="w-full h-32 p-2 bg-gray-50 border border-gray-300 rounded mb-4"
+                                placeholder="John Doe\n123 Main St\nSpringfield, IL 62701"
+                            />
+                            <label className="block text-sm font-bold text-black mb-2">
+                                出生日期（YYYY-MM-DD）:
+                            </label>
+                            <textarea
+                                value={birthDate}
+                                onChange={(e) => setBirthDate(e.target.value)}
+                                className="w-full h-12 p-2 bg-gray-50 border border-gray-300 rounded mb-4"
+                                placeholder="1990-01-01"
+                            />
+                            <label className="block text-sm font-bold text-black mb-2">
+                                SSN（XXX-XX-XXXX）:
+                            </label>
+                            <textarea
+                                value={ssn}
+                                onChange={(e) => setSsn(e.target.value)}
+                                className="w-full h-12 p-2 bg-gray-50 border border-gray-300 rounded mb-4"
+                                placeholder="123-45-6789"
+                            />
+                            <div className="flex space-x-4">
+                                <button
+                                    onClick={runAnalysis}
+                                    disabled={isAnalyzing}
+                                    className={`px-4 py-2 ${isAnalyzing ? 'bg-gray-400' : 'bg-blue-600'} text-white rounded hover:bg-blue-700`}
+                                >
+                                    分析
+                                </button>
+                                <button
+                                    onClick={copyResults}
+                                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                                >
+                                    复制结果
+                                </button>
+                                <button
+                                    onClick={exportResults}
+                                    className="px-4 py-2 bg-yellow-500 text-black rounded hover:bg-yellow-600"
+                                >
+                                    导出结果
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* 右侧栏 */}
+                        <div className="bg-white p-4 rounded shadow w-full lg:w-[400px] flex flex-col">
+                            <div className="flex-1">
+                                <h2 className="text-sm font-bold text-gray-800 mb-2">当前分析结果</h2>
+                                <div className="max-h-96 overflow-y-auto">
+                                    {results.length ? results.map((info, idx) => (
+                                        <div key={idx} className="mb-4">
+                                            <h3 className="text-sm font-bold text-blue-600">记录 {idx + 1}</h3>
+                                            {Object.entries(info).filter(([_, val]) => val).map(([key, val]) => (
+                                                <div key={key} className="flex text-sm">
+                                                    <span className="font-bold w-24">{key}:</span>
+                                                    <span className="flex-1 bg-gray-200 p-1 rounded">{val}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )) : (
+                                        <p className="text-sm text-gray-600">暂无结果</p>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="mt-4">
+                                <h2 className="text-sm font-bold text-gray-800 mb-2">最近历史记录</h2>
+                                <div className="max-h-32 overflow-y-auto">
+                                    {history.map((item, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => displayHistoryRecord(item.record)}
+                                            className="block w-full text-left text-sm bg-gray-200 p-2 mb-1 rounded hover:bg-gray-300"
+                                        >
+                                            {item.name} ({item.timestamp})
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 赞助弹窗 */}
+                    {showSponsor && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                            <div className="bg-gray-100 p-6 rounded shadow-lg w-11/12 sm:w-96">
+                                <h2 className="text-lg font-bold text-gray-800 mb-4">{SPONSOR_CONTENT.title}</h2>
+                                {SPONSOR_CONTENT.image_path ? (
+                                    <img
+                                        src={SPONSOR_CONTENT.image_path}
+                                        alt="Sponsor"
+                                        className="w-48 h-48 mx-auto mb-4"
+                                    />
+                                ) : (
+                                    <p className="text-sm text-gray-600 mb-4">无图片</p>
+                                )}
+                                <p className="text-sm text-gray-600 text-center mb-4">{SPONSOR_CONTENT.description}</p>
+                                <button
+                                    onClick={() => setShowSponsor(false)}
+                                    className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                    关闭
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // 渲染
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
 </body>
 </html>
