@@ -4,12 +4,15 @@ STEPS = [
     {"name": "角色信息", "url": "https://www.fakenamegenerator.com/advanced.php"},
     {"name": "SSN", "url": "https://www.fakexy.com"},
     {"name": "sms接码", "url": "https://temp-number.com"},
-    {"name": "学校注册官网", "url": "https://webapp4.asu.edu/uga_admissionsapp/?partner=SCAP?_ga=2.194414253.1668800463.1745983244-1199703711.1745038077"},  # 新增步骤
+    {"name": "学校注册官网", "url": "https://webapp4.asu.edu/uga_admissionsapp/?partner=SCAP?_ga=2.194414253.1668800463.1745983244-1199703711.1745038077"},
+    {"name": "全球网络", "url": "https://biaojie.shop/register?aff=p4y9gwMA"},  # 新增全球网络链接
 ]
 
 # 备注信息
 REMARK = "备注：注意网络环境设置为规则国际网络"
 
+# 公告内容
+ANNOUNCEMENT = "公告：请确保使用稳定的国际网络环境，推荐使用全球网络服务。"
 
 # 如何添加新按钮和链接
 # 1. 编辑 ui/links_config.py

@@ -4,3 +4,4 @@ python-dateutil
 spacy
 Pillow
 Flask
+pyperclip

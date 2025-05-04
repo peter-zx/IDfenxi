@@ -11,8 +11,8 @@ def main():
     # 创建 Tkinter 根窗口
     root = tk.Tk()
 
-    # 创建 asyncio 事件循环
-    loop = asyncio.get_event_loop()
+    # 创建新的 asyncio 事件循环
+    loop = asyncio.new_event_loop()
 
     # 创建 GUI 实例
     app = AppGUI(root, loop)
@@ -21,12 +21,14 @@ def main():
     executor = ThreadPoolExecutor(max_workers=1)
     executor.submit(run_loop, loop)
 
-    # 启动 Tkinter 主循环
-    root.mainloop()
-
-    # 清理：在程序退出时停止事件循环
-    loop.stop()
-    executor.shutdown(wait=True)
+    try:
+        # 启动 Tkinter 主循环
+        root.mainloop()
+    finally:
+        # 清理
+        loop.call_soon_threadsafe(loop.stop)
+        executor.shutdown(wait=True)
+        loop.close()
 
 if __name__ == "__main__":
     main()

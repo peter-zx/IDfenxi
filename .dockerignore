@@ -13,3 +13,5 @@ pycache/ *.pyc
 忽略本地测试文件
 
 input_data.txt
+
+records/
