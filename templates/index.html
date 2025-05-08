@@ -31,7 +31,7 @@
         // 模拟 sponsor_config.py 的 SPONSOR_CONTENT
         const SPONSOR_CONTENT = {
             title: "赞助支持",
-            image_path: "/static/images/qr_code.jpg", // 更新为静态文件路径
+            image_path: "/static/qr_code.jpg",
             description: "感谢您的支持！您的赞助将帮助我们持续改进和维护此工具。",
         };
 
@@ -47,7 +47,7 @@
 
             // 加载历史记录
             useEffect(() => {
-                fetch('/api/history')
+                fetch('/edu/api/history')
                     .then(res => res.json())
                     .then(data => setHistory(data.slice(0, 6)))
                     .catch(err => console.error('加载历史记录失败:', err));
@@ -64,7 +64,7 @@
                 }
                 setIsAnalyzing(true);
                 try {
-                    const res = await fetch('/api/analyze', {
+                    const res = await fetch('/edu/api/analyze', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ name_address: nameAddress, birth_date: birthDate, ssn }),
@@ -73,7 +73,7 @@
                     const data = await res.json();
                     setResults(data);
                     if (data.length) {
-                        const newHistory = await fetch('/api/history').then(res => res.json());
+                        const newHistory = await fetch('/edu/api/history').then(res => res.json());
                         setHistory(newHistory.slice(0, 6));
                     }
                 } catch (e) {
