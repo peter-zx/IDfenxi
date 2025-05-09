@@ -1,3 +1,6 @@
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg) ](https://colab.research.google.com/github/peter-zx/IDfenxi) 
+
+
 # 最新版本 20250505
 
 ![alt text](image.png)
