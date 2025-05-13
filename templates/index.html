@@ -18,7 +18,6 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // 模拟 links_config.py 的 STEPS 和 ANNOUNCEMENT
         const STEPS = [
             { name: "角色信息", url: "https://www.fakenamegenerator.com/advanced.php" },
             { name: "SSN", url: "https://www.fakexy.com" },
@@ -28,14 +27,12 @@
         ];
         const ANNOUNCEMENT = "公告：请确保使用稳定的国际网络环境，推荐使用全球网络服务。";
 
-        // 模拟 sponsor_config.py 的 SPONSOR_CONTENT
         const SPONSOR_CONTENT = {
             title: "赞助支持",
             image_path: "/static/qr_code.jpg",
             description: "感谢您的支持！您的赞助将帮助我们持续改进和维护此工具。",
         };
 
-        // 主组件
         function App() {
             const [nameAddress, setNameAddress] = useState('');
             const [birthDate, setBirthDate] = useState('');
@@ -45,15 +42,13 @@
             const [isAnalyzing, setIsAnalyzing] = useState(false);
             const [showSponsor, setShowSponsor] = useState(false);
 
-            // 加载历史记录
             useEffect(() => {
-                fetch('/edu/api/history')
+                fetch('/idfenxi/api/history')
                     .then(res => res.json())
                     .then(data => setHistory(data.slice(0, 6)))
                     .catch(err => console.error('加载历史记录失败:', err));
             }, []);
 
-            // 分析函数
             const runAnalysis = async () => {
                 if (!nameAddress.trim()) {
                     alert('请在“姓名地址邮码”框内输入内容。');
@@ -64,16 +59,19 @@
                 }
                 setIsAnalyzing(true);
                 try {
-                    const res = await fetch('/edu/api/analyze', {
+                    const res = await fetch('/idfenxi/api/analyze', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name_address: nameAddress, birth_date: birthDate, ssn }),
+                        body: JSON.stringify({ name_address: nameAddress, birth_date: birthDate, ssn })
                     });
-                    if (!res.ok) throw new Error('分析失败');
+                    if (!res.ok) {
+                        const errorData = await res.json();
+                        throw new Error(errorData.error || '分析失败');
+                    }
                     const data = await res.json();
                     setResults(data);
                     if (data.length) {
-                        const newHistory = await fetch('/edu/api/history').then(res => res.json());
+                        const newHistory = await fetch('/idfenxi/api/history').then(res => res.json());
                         setHistory(newHistory.slice(0, 6));
                     }
                 } catch (e) {
@@ -83,7 +81,6 @@
                 }
             };
 
-            // 复制结果
             const copyResults = () => {
                 if (!results.length) {
                     alert('当前没有可复制的解析结果。');
@@ -95,7 +92,6 @@
                 navigator.clipboard.writeText(text).then(() => alert('结果已复制到剪贴板！'));
             };
 
-            // 导出结果
             const exportResults = () => {
                 if (!results.length) {
                     alert('当前没有可导出的解析结果。');
@@ -115,14 +111,12 @@
                 alert('结果已导出！');
             };
 
-            // 显示历史记录
             const displayHistoryRecord = (record) => {
                 setResults([record]);
             };
 
             return (
                 <div className="min-h-screen bg-gray-100">
-                    {/* 顶部栏 */}
                     <div className="bg-gray-100 p-4 flex flex-col sm:flex-row items-center justify-between">
                         <div className="flex items-center space-x-4">
                             <h1 className="text-xl sm:text-2xl font-bold text-black">EDU 邮箱注册信息生成器</h1>
@@ -136,9 +130,7 @@
                         </button>
                     </div>
 
-                    {/* 主内容 */}
                     <div className="flex flex-col lg:flex-row p-4 space-y-4 lg:space-y-0 lg:space-x-4">
-                        {/* 左侧栏 */}
                         <div className="bg-white p-4 rounded shadow w-full lg:w-[400px] flex flex-col">
                             <div className="flex-1 h-[70%]">
                                 <h2 className="text-lg font-bold text-gray-800 mb-4">EDU信息生成的步骤</h2>
@@ -169,7 +161,6 @@
                             </div>
                         </div>
 
-                        {/* 中间栏 */}
                         <div className="bg-white p-4 rounded shadow w-full lg:flex-1">
                             <label className="block text-sm font-bold text-black mb-2">
                                 姓名地址邮码（每组用空行分隔）:
@@ -221,7 +212,6 @@
                             </div>
                         </div>
 
-                        {/* 右侧栏 */}
                         <div className="bg-white p-4 rounded shadow w-full lg:w-[400px] flex flex-col">
                             <div className="flex-1">
                                 <h2 className="text-sm font-bold text-gray-800 mb-2">当前分析结果</h2>
@@ -258,7 +248,6 @@
                         </div>
                     </div>
 
-                    {/* 赞助弹窗 */}
                     {showSponsor && (
                         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                             <div className="bg-gray-100 p-6 rounded shadow-lg w-11/12 sm:w-96">
@@ -286,7 +275,6 @@
             );
         }
 
-        // 渲染
         ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>

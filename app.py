@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, jsonify
-import asyncio
 import os
 import glob
 import csv
@@ -12,30 +11,38 @@ app = Flask(__name__)
 RECORDS_DIR = "records"
 
 @app.route('/')
+@app.route('/idfenxi')
 def index():
     return render_template('index.html')
 
-@app.route('/api/analyze', methods=['POST'])
-async def analyze():
+@app.route('/idfenxi/api/analyze', methods=['POST'])
+def analyze():
     data = request.get_json()
-    name_address = data.get('name_address', '')
-    birth_date = data.get('birth_date', '')
-    ssn = data.get('ssn', '')
+    name_address = data.get('name_address', '').strip()
+    birth_date = data.get('birth_date', '').strip()
+    ssn = data.get('ssn', '').strip()
 
     if not name_address:
         return jsonify({'error': '请在“姓名地址邮码”框内输入内容。'}), 400
 
+    print(f"Raw JSON input: {data}")
+    print(f"Input data - name_address: {name_address}, birth_date: {birth_date}, ssn: {ssn}")
     try:
-        results = await extract_information(name_address, birth_date, ssn)
+        results = extract_information(name_address, birth_date, ssn)
+        print(f"Extracted results: {results}")
+        if not results or not isinstance(results, list):
+            return jsonify({'error': '解析结果为空或格式错误。'}), 500
         save_records(results)
+        print(f"Records saved successfully: {results}")
         return jsonify(results)
     except Exception as e:
+        print(f"Analyze error: {str(e)}")
         return jsonify({'error': f'解析失败：{str(e)}'}), 500
 
-@app.route('/api/history', methods=['GET'])
+@app.route('/idfenxi/api/history', methods=['GET'])
 def get_history():
     if not os.path.exists(RECORDS_DIR):
-        os.makedirs(RECORDS_DIR)
+        os.makedirs(RECORDS_DIR, 0o755)
 
     csv_files = glob.glob(os.path.join(RECORDS_DIR, "*.csv"))
     csv_files.sort(key=os.path.getmtime, reverse=True)
@@ -61,7 +68,7 @@ def get_history():
 
 def save_records(results):
     if not os.path.exists(RECORDS_DIR):
-        os.makedirs(RECORDS_DIR)
+        os.makedirs(RECORDS_DIR, 0o755)
 
     existing_records = []
     for file_path in glob.glob(os.path.join(RECORDS_DIR, "*.csv")):
@@ -81,7 +88,6 @@ def save_records(results):
         file_name = f"{name}_{timestamp}.csv"
         file_path = os.path.join(RECORDS_DIR, file_name)
 
-        # 检查重复
         if any(
             existing.get('名字', '') == first_name and
             existing.get('姓氏', '') == last_name and
@@ -96,7 +102,8 @@ def save_records(results):
                 writer.writeheader()
                 writer.writerow(info)
         except Exception as e:
-            print(f"保存记录 {name} 失败：{str(e)}")
+            print(f"Failed to save record {file_path}: {str(e)}")
+            raise
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=1575)
