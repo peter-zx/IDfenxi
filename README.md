@@ -3,6 +3,8 @@
 
 # 最新版本 20250505
 
+在线版本 直达地址 http://bamboox.me/
+
 ![alt text](image.png)
 
 ```
